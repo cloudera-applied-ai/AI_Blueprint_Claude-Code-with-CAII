@@ -1,9 +1,9 @@
 # Cloudera Blueprint: Claude Code with Cloudera AI Inference
 
+[![Author-Kevin Talbert](https://img.shields.io/badge/Author-Kevin%20Talbert-555555)](https://github.com/kevinbtalbert)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](#license)
 [![Python](https://img.shields.io/badge/Python-3.13%2B-blue.svg)](requirements-litellm.txt)
 [![Cloudera Blueprint](https://img.shields.io/badge/Cloudera-Blueprint-f96702.svg)](METADATA.yaml)
-[![Author-Kevin Talbert](https://img.shields.io/badge/Author-Kevin%20Talbert-555555)]()
 [![Stars](https://img.shields.io/github/stars/cloudera-applied-ai/AI_Blueprint_Claude-Code-with-CAII?logo=github&cacheSeconds=300)](https://github.com/cloudera-applied-ai/AI_Blueprint_Claude-Code-with-CAII/stargazers)
 [![Forks](https://img.shields.io/github/forks/cloudera-applied-ai/AI_Blueprint_Claude-Code-with-CAII?logo=github&cacheSeconds=300)](https://github.com/cloudera-applied-ai/AI_Blueprint_Claude-Code-with-CAII/network/members)
 
