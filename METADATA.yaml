@@ -1,0 +1,50 @@
+# Cloudera Blueprint catalog metadata
+# Populate fields used by the master blueprint website and internal catalog.
+
+# --- Identity ---
+name: "Claude Code with Cloudera AI Inference"
+slug: "claude-code-cai-inference"
+description: "Run Claude Code coding agents in Cloudera AI Workbench against Devstral and other models served on Cloudera AI Inference via LiteLLM and an OpenAI-compatible API."
+reprise_link: ""
+
+# --- Classification (website filters) ---
+catalog_classification:
+  - Developer Example
+launchable: true
+lifecycle_status: Active
+
+# --- Industry & alignment ---
+industry: General
+industry_alignment: "Horizontal"
+target_vertical: ""
+
+# --- Tags (website search & browse) ---
+tags:
+  - claude-code
+  - devstral
+  - cai-inference
+  - coding-agent
+  - agents
+  - litellm
+
+# --- Relationships ---
+product_mapping:
+  - Cloudera AI Inference Service
+  - Cloudera Machine Learning
+model_dependencies:
+  - kevinbtalbert/Devstral-Small-2507
+
+# --- Provenance ---
+publisher: cloudera
+source: Internal
+
+# --- Repository & assets ---
+public_github_link: "https://github.com/cloudera-applied-ai/AI_Blueprint_Claude-Code-with-CAII"
+
+# --- Ownership ---
+maintainer_name: "Kevin Talbert"
+
+# --- Dates ---
+date_created: "2026-08-17"
+date_updated: "2026-08-17"
+published_date: "2026-08-17"

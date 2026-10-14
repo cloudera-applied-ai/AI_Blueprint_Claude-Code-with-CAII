@@ -1,0 +1,5 @@
+# Pinned LiteLLM proxy stack — installed at image build time only.
+# FastAPI must stay below 0.140 (get_flat_dependant removed in 0.140+).
+# See: https://github.com/BerriAI/litellm/issues/35763
+litellm[proxy]==1.95.0
+fastapi==0.139.0
