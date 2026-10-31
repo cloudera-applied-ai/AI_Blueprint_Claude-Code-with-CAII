@@ -42,7 +42,7 @@ claude  →  LiteLLM (localhost:4000)  →  CAII endpoint (Devstral / vLLM)
 ## Key Features
 
 - **Custom CAI runtime** with Claude Code, LiteLLM, and agent-friendly tooling preinstalled
-- **Pre-built image** supported—no Docker build required for most users
+- **Pre-built images** (standard and CUDA)—no Docker build required for most users
 - **Config from env** (`CAII_*`) + `claude-sync-config`; JWT not written to disk
 - **LiteLLM proxy** bridges Anthropic API → OpenAI-compatible CAII route
 - **Dynamic JWT** from `/tmp/jwt` when `CAII_API_TOKEN` is unset (workbench default)
@@ -67,24 +67,76 @@ In the Cloudera console:
 
 ### 2. Register the workbench runtime
 
-**Option A (recommended):** Use the **pre-built runtime image** — no Docker build required. In **Admin → Runtime Catalog → Add Runtime**, paste:
+**Option A (recommended):** Use a **pre-built runtime image** — no Docker build required. Two images are published (same Claude Code + CAI Inference stack; **full-version** tag matches the Claude Code CLI semver):
+
+| Image | Use when |
+|--------|-----------|
+| `docker.io/kevintalbert/claudeworkbench:2.1.314` | Default workbench — **no GPU required** on the pod (inference runs on CAII) |
+| `docker.io/kevintalbert/claudeworkbench-cuda:2.1.314` | Workbench sessions need **CUDA** on the pod |
+
+In **Admin → Runtime Catalog → Add Runtime**, paste one of:
 
 ```text
-docker.io/kevintalbert/claudeworkbench:latest
+docker.io/kevintalbert/claudeworkbench:2.1.314
+docker.io/kevintalbert/claudeworkbench-cuda:2.1.314
 ```
 
 ![Runtime catalog — Claude Code + CAI Inference registered successfully](assets/add-runtime.png)
 
-When registered, the runtime shows **Edition: Claude Code + CAI Inference** and **Runtime Image: `docker.io/kevintalbert/claudeworkbench:latest`** with a green status checkmark.
+When registered, the runtime shows **Edition: Claude Code with CAI Inference** and your chosen **Runtime Image** with a green status checkmark. Register **full-version** `2.1.314` in the catalog to match the image tag.
 
-Then create a project with that runtime and start a session. **No GPU required on the workbench pod**—inference runs on CAII.
+Then create a project with that runtime and start a session.
 
-**Option B:** Build and register from this repo:
+**Option B:** Build and register from this repo (`docker build`):
 
 ```bash
-docker build --pull --rm -f Dockerfile -t <your-registry>/claudeworkbench:1.0.0 .
-# push to your registry, then Add Runtime in the catalog
+REGISTRY=<your-registry>/claudeworkbench
+V="$(curl -fsSL https://registry.npmjs.org/@anthropic-ai/claude-code/latest \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')"
+
+docker build --pull -f Dockerfile \
+  --build-arg "CLAUDE_CLI_VERSION=${V}" \
+  --build-arg "ML_RUNTIME_FULL_VERSION=${V}" \
+  --build-arg "ML_RUNTIME_SHORT_VERSION=${V%%.*}" \
+  --build-arg "ML_RUNTIME_MAINTENANCE_VERSION=${V#*.}" \
+  -t "${REGISTRY}:${V}" \
+  -t "${REGISTRY}:latest" \
+  .
+
+docker push "${REGISTRY}:${V}"
+docker push "${REGISTRY}:latest"
 ```
+
+Resolve `V` once on the build host (same source the Dockerfile uses when `CLAUDE_CLI_VERSION` is unset), pin the npm install to that , and tag the image `:latest` and `:${V}` in **one** build. **Edition** stays `Claude Code with CAI Inference`; **full-version** / catalog version is `V`.
+
+**Minimal build** (only `-t :latest` — typical for local Docker Desktop or a first CI pass):
+
+```bash
+docker build --pull -f Dockerfile -t kevintalbert/claudeworkbench:latest .
+```
+
+When the build finishes, open the **build logs** (Docker Desktop → **Builds** → your build → **Logs**). Near the end of step **14/15** you will see:
+
+```text
+--- build result ---
+2.1.314
+docker tag <image> <registry>/claudeworkbench:2.1.314
+```
+
+![Docker build logs — build result with Claude CLI version and docker tag command](assets/build-step.png)
+
+Use that output before you push:
+
+1. **Catalog / runtime version** — the line after `--- build result ---` is the **ML runtime full version** (Claude Code CLI semver installed in the image). Register the runtime in CML with that version when the catalog asks for it.
+2. **Registry tag** — run the printed `docker tag` line (replace `<image>` with your local name, e.g. `kevintalbert/claudeworkbench:latest`, and `<registry>/claudeworkbench` with your registry path), then push both tags:
+
+```bash
+docker tag kevintalbert/claudeworkbench:latest <your-registry>/claudeworkbench:2.1.314
+docker push <your-registry>/claudeworkbench:2.1.314
+docker push <your-registry>/claudeworkbench:latest
+```
+
+Catalog **edition** stays `Claude Code with CAI Inference`; only **full-version** changes when the CLI semver changes.
 
 The Docker build installs pinned LiteLLM/FastAPI versions from `requirements-litellm.txt` and runs `scripts/verify-litellm-install.sh` — the build fails if the proxy cannot import or start.
 
@@ -241,3 +293,4 @@ That path uses **`CAI_API_BASE`**, **`CAI_CDP_TOKEN`**, and **`CAI_MODEL_NAME`**
 ## License
 
 MIT © 2026 Cloudera, Inc.
+semver
