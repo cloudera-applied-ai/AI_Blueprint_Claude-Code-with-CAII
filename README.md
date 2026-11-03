@@ -77,13 +77,13 @@ In the Cloudera console:
 In **Admin → Runtime Catalog → Add Runtime**, paste one of:
 
 ```text
-docker.io/kevintalbert/claudeworkbench:2.1.314
-docker.io/kevintalbert/claudeworkbench-cuda:2.1.314
+docker.io/kevintalbert/claudeworkbench:2.1.317
+docker.io/kevintalbert/claudeworkbench-cuda:2.1.317
 ```
 
 ![Runtime catalog — Claude Code + CAI Inference registered successfully](assets/add-runtime.png)
 
-When registered, the runtime shows **Edition: Claude Code with CAI Inference** and your chosen **Runtime Image** with a green status checkmark. Register **full-version** `2.1.314` in the catalog to match the image tag.
+When registered, the runtime shows **Edition: Claude Code with CAI Inference** and your chosen **Runtime Image** with a green status checkmark. Register **full-version** `2.1.317` in the catalog to match the image tag.
 
 Then create a project with that runtime and start a session.
 
@@ -119,8 +119,8 @@ When the build finishes, open the **build logs** (Docker Desktop → **Builds** 
 
 ```text
 --- build result ---
-2.1.314
-docker tag <image> <registry>/claudeworkbench:2.1.314
+2.1.317
+docker tag <image> <registry>/claudeworkbench:2.1.31
 ```
 
 ![Docker build logs — build result with Claude CLI version and docker tag command](assets/build-step.png)
@@ -131,8 +131,8 @@ Use that output before you push:
 2. **Registry tag** — run the printed `docker tag` line (replace `<image>` with your local name, e.g. `kevintalbert/claudeworkbench:latest`, and `<registry>/claudeworkbench` with your registry path), then push both tags:
 
 ```bash
-docker tag kevintalbert/claudeworkbench:latest <your-registry>/claudeworkbench:2.1.314
-docker push <your-registry>/claudeworkbench:2.1.314
+docker tag kevintalbert/claudeworkbench:latest <your-registry>/claudeworkbench:2.1.317
+docker push <your-registry>/claudeworkbench:2.1.317
 docker push <your-registry>/claudeworkbench:latest
 ```
 
