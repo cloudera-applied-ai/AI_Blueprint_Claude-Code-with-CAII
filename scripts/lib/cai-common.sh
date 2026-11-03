@@ -7,6 +7,7 @@
 #   CAII_API_TOKEN       — Bearer token (CDP JWT); if unset, read access_token from /tmp/jwt
 #   CAII_MODEL           — model id for chat/completions (e.g. kevinbtalbert/Devstral-Small-2507)
 #   CAII_LITELLM_PORT    — local LiteLLM proxy port (default: 4000)
+#   CAI_CLAUDE_*_ALIAS   — optional override; defaults come from the installed Claude Code CLI
 
 : "${CAI_HOME:?CAI_HOME must be set before sourcing cai-common.sh}"
 
@@ -22,14 +23,40 @@ PROXY_URL="http://127.0.0.1:${LITELLM_PORT}"
 CAII_MAX_OUTPUT_TOKENS="${CAII_MAX_OUTPUT_TOKENS:-8192}"
 CAII_MAX_INPUT_TOKENS="${CAII_MAX_INPUT_TOKENS:-57344}"
 
-CLAUDE_OPUS_ALIAS="${CAI_CLAUDE_OPUS_ALIAS:-claude-opus-4-6}"
-CLAUDE_SONNET_ALIAS="${CAI_CLAUDE_SONNET_ALIAS:-claude-sonnet-4-6}"
-CLAUDE_HAIKU_ALIAS="${CAI_CLAUDE_HAIKU_ALIAS:-claude-haiku-4-5-20251001}"
+CLAUDE_MODEL_ALIASES_FILE="${CAI_CLAUDE_MODEL_ALIASES_FILE:-/opt/cai-claude/claude-model-aliases.env}"
+CLAUDE_OPUS_ALIAS=""
+CLAUDE_SONNET_ALIAS=""
+CLAUDE_HAIKU_ALIAS=""
+CLAUDE_DEFAULT_MODEL=""
 
 cai_log() { printf '%s\n' "$*" >&2; }
 cai_die() { cai_log "ERROR: $*"; return 1; }
 
 cai_have_cmd() { command -v "$1" >/dev/null 2>&1; }
+
+cai_load_claude_model_aliases() {
+    if [[ -n "${CAI_CLAUDE_ALIASES_LOADED:-}" ]]; then
+        return 0
+    fi
+
+    if [[ -f "$CLAUDE_MODEL_ALIASES_FILE" ]]; then
+        # shellcheck disable=SC1090
+        source "$CLAUDE_MODEL_ALIASES_FILE"
+    elif cai_have_cmd claude && [[ -f /opt/cai-claude/lib/resolve-claude-model-aliases.py ]]; then
+        # shellcheck disable=SC1090
+        eval "$(python3 /opt/cai-claude/lib/resolve-claude-model-aliases.py "$(command -v claude)" --shell 2>/dev/null)" || true
+    fi
+
+    CLAUDE_OPUS_ALIAS="${CAI_CLAUDE_OPUS_ALIAS:-${CLAUDE_OPUS_ALIAS:-}}"
+    CLAUDE_SONNET_ALIAS="${CAI_CLAUDE_SONNET_ALIAS:-${CLAUDE_SONNET_ALIAS:-}}"
+    CLAUDE_HAIKU_ALIAS="${CAI_CLAUDE_HAIKU_ALIAS:-${CLAUDE_HAIKU_ALIAS:-}}"
+    CLAUDE_DEFAULT_MODEL="${CAI_CLAUDE_DEFAULT_MODEL:-${CLAUDE_DEFAULT_MODEL:-${CLAUDE_SONNET_ALIAS:-}}}"
+
+    if [[ -z "$CLAUDE_SONNET_ALIAS" || -z "$CLAUDE_OPUS_ALIAS" || -z "$CLAUDE_HAIKU_ALIAS" ]]; then
+        cai_die "Could not resolve Claude Code model aliases from the installed CLI. Rebuild the runtime image or set CAI_CLAUDE_*_ALIAS." || return 1
+    fi
+    export CAI_CLAUDE_ALIASES_LOADED=1
+}
 
 cai_ensure_caii_token() {
     if [[ -n "${CAII_API_TOKEN:-}" ]]; then
@@ -92,6 +119,7 @@ cai_litellm_bin() {
 }
 
 cai_write_litellm_config() {
+    cai_load_claude_model_aliases || return 1
     local base_url model openai_model max_out max_in
     base_url="${CAII_OPENAI_BASE_URL%/}"
     model="${CAII_MODEL}"
@@ -205,6 +233,7 @@ cai_start_litellm_proxy() {
 }
 
 cai_write_claude_settings() {
+    cai_load_claude_model_aliases || return 1
     mkdir -p "$HOME/.claude"
     umask 077
 
@@ -218,10 +247,10 @@ EOF
     cat >"$HOME/.claude/settings.json" <<EOF
 {
   "promptSuggestionEnabled": false,
-  "model": "${CLAUDE_SONNET_ALIAS}",
+  "model": "${CLAUDE_DEFAULT_MODEL}",
   "env": {
     "ANTHROPIC_BASE_URL": "${PROXY_URL}",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "${CLAUDE_SONNET_ALIAS}",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "${CLAUDE_OPUS_ALIAS}",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "${CLAUDE_SONNET_ALIAS}",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "${CLAUDE_HAIKU_ALIAS}",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
@@ -238,10 +267,11 @@ EOF
 }
 
 cai_export_claude_env() {
+    cai_load_claude_model_aliases || return 1
     export ANTHROPIC_BASE_URL="$PROXY_URL"
     export ANTHROPIC_API_KEY="$LITELLM_MASTER_KEY"
     unset ANTHROPIC_AUTH_TOKEN
-    export ANTHROPIC_DEFAULT_OPUS_MODEL="$CLAUDE_SONNET_ALIAS"
+    export ANTHROPIC_DEFAULT_OPUS_MODEL="$CLAUDE_OPUS_ALIAS"
     export ANTHROPIC_DEFAULT_SONNET_MODEL="$CLAUDE_SONNET_ALIAS"
     export ANTHROPIC_DEFAULT_HAIKU_MODEL="$CLAUDE_HAIKU_ALIAS"
     export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY="${CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY:-1}"
