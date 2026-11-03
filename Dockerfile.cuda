@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -sf /usr/bin/batcat /usr/local/bin/bat
 
 # ── Node.js 22.23.4+ (Oct 2026 security release; claude-code requires node >= 22) ─
+# Not the Node bundled in CDH parcels (e.g. SMM UI on DL nodes) — this runtime uses its own Node under /usr/local.
 ARG NODE_VERSION=22.23.4
 RUN curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
     | tar -xJ -C /usr/local --strip-components=1 \

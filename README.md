@@ -71,8 +71,8 @@ In the Cloudera console:
 
 | Image | Use when |
 |--------|-----------|
-| `docker.io/kevintalbert/claudeworkbench:2.1.314` | Default workbench — **no GPU required** on the pod (inference runs on CAII) |
-| `docker.io/kevintalbert/claudeworkbench-cuda:2.1.314` | Workbench sessions need **CUDA** on the pod |
+| `docker.io/kevintalbert/claudeworkbench:2.1.317` | Default workbench — **no GPU required** on the pod (inference runs on CAII) |
+| `docker.io/kevintalbert/claudeworkbench-cuda:2.1.317` | Workbench sessions need **CUDA** on the pod |
 
 In **Admin → Runtime Catalog → Add Runtime**, paste one of:
 
