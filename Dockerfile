@@ -15,11 +15,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
     && ln -sf /usr/bin/batcat /usr/local/bin/bat
 
-# ── Node.js 22 (@anthropic-ai/claude-code requires node >= 22) ────────────────
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/* && \
-    node --version
+# ── Node.js 22.23.4+ (Oct 2026 security release; claude-code requires node >= 22) ─
+# Not the Node bundled in CDH parcels (e.g. SMM UI on DL nodes) — this runtime uses its own Node under /usr/local.
+ARG NODE_VERSION=22.23.4
+RUN curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+    | tar -xJ -C /usr/local --strip-components=1 \
+    && node --version \
+    && python3 -c "import subprocess; v=subprocess.check_output(['node','--version'], text=True).strip().lstrip('v'); p=tuple(map(int,(v.split('.')+['0','0','0'])[:3])); assert p>=(22,23,4), f'Node {v} < 22.23.4 (required security baseline)'"
+
+COPY scripts/lib/resolve-claude-model-aliases.py /opt/cai-claude/lib/resolve-claude-model-aliases.py
 
 # ── Claude Code CLI ──────────────────────────────────────────────────────────
 # Optional: --build-arg CLAUDE_CLI_VERSION=<semver> pins the npm package (recommended with -t :<same-semver>).
@@ -33,7 +37,8 @@ RUN bash -euo pipefail -c '\
     fi; \
     npm install -g "@anthropic-ai/claude-code@${CLAUDE_CLI_VERSION}"; \
     command -v claude >/dev/null; \
-    claude --version 2>/dev/null | grep -oE "[0-9]+(\.[0-9]+)*" | head -1 > /opt/cai-claude/claude-cli-version \
+    claude --version 2>/dev/null | grep -oE "[0-9]+(\.[0-9]+)*" | head -1 > /opt/cai-claude/claude-cli-version; \
+    python3 /opt/cai-claude/lib/resolve-claude-model-aliases.py "$(command -v claude)" > /opt/cai-claude/claude-model-aliases.env \
     '
 
 # ── LiteLLM proxy (Anthropic API → OpenAI-compatible CAI Inference) ──────────

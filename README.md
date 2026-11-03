@@ -234,6 +234,7 @@ Allowed vLLM flags in the UI: [CAII supported vLLM arguments](https://docs.cloud
 | `assets/` | Screenshots for README and demos |
 | `scripts/cai-runtime-startup.sh` | Runtime profile hook: `claude`, `claude-sync-config`, helpers |
 | `scripts/lib/cai-common.sh` | LiteLLM proxy + CAII env helpers |
+| `scripts/lib/resolve-claude-model-aliases.py` | Reads model ids from the installed Claude Code CLI binary |
 | `requirements-litellm.txt` | Pinned LiteLLM + FastAPI deps (verified at image build) |
 | `scripts/verify-litellm-install.sh` | Build-time smoke test for the LiteLLM proxy |
 | `Dockerfile` | Workbench runtime image definition |
@@ -244,6 +245,12 @@ Allowed vLLM flags in the UI: [CAII supported vLLM arguments](https://docs.cloud
 - Cloudera AI with **AI Inference** and **Workbench** (runtime catalog access for admins)
 - A **running CAII endpoint** and permission to **Generate JWT Token**
 - For custom image build: `docker`, registry push access
+
+### Node.js in this runtime (vs CDH parcel Node)
+
+This workbench image installs its **own** Node.js under `/usr/local` (currently **22.23.4+** from [nodejs.org](https://nodejs.org/en/download)), not the Node embedded in CDH parcels (for example Streams Messaging Manager UI on Data Lake nodes at `…/streams_messaging_manager_ui/node/`). That addresses the **October 2026 Node.js security release** (including **CVE-2026-111497** on the 22.x line; fixed in **22.23.4**). Rebuild and re-publish the runtime image to pick up a newer `NODE_VERSION` build-arg when Node publishes additional fixes.
+
+Claude Code **model ids** (Opus / Sonnet / Haiku) are taken from the **installed CLI binary** at image build (`/opt/cai-claude/claude-model-aliases.env`) and refreshed at `claude-sync-config` if needed—not hardcoded. Override with `CAI_CLAUDE_OPUS_ALIAS`, `CAI_CLAUDE_SONNET_ALIAS`, or `CAI_CLAUDE_HAIKU_ALIAS` only when you must.
 
 ## Hardware Requirements
 
